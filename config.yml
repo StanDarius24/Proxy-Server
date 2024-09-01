@@ -1,0 +1,23 @@
+
+receiver:
+  url:
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+  query_params:
+    query1: test
+    query2: test
+  authorization:
+    basic: test
+  body:
+sender:
+  url:
+  headers:
+    Accept: application/json
+    Content-Type: application/json
+  query_params:
+    query1: test
+    query2: test
+  authorization:
+    basic: test
+  body:
