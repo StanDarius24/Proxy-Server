@@ -5,11 +5,9 @@ edition = "2021"
 
 [dependencies]
 thiserror = "1"
-tide = "0.16.0"
-async-std = { version = "1.8.0", features = ["attributes"] }
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros"] }
 serde_yaml = "0.9.34+deprecated"
+rocket = { version = "0.5.1", features = ["json"] }
 
 [dev-dependencies]
 anyhow = "1"
