@@ -2,12 +2,15 @@ mod configuration;
 mod controller;
 mod model;
 
-use server_proxy::configuration::parser::Parser;
 use crate::configuration::server;
 
+#[macro_use]
+extern crate rocket;
 
 #[rocket::main]
 async fn main() -> Result<(), rocket::Error> {
-    Parser::read_configuration();
-    server::Server::new(Box::from("0.0.0.0"), Box::from("8080")).await
+    server::Server::create_server(
+        Box::from("0.0.0.0"),
+        Box::from("8081")
+    ).await
 }
