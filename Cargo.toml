@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+thiserror = "2.0.17"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_yaml = "0.9.34"
+rocket = { version = "0.5.1", features = ["json"] }
+reqwest = "0.12.24"
+mongodb = { version = "3.4.1", features = ["sync"] }
 
 [dev-dependencies]
-anyhow = "1"
+anyhow = "1.0.86"
