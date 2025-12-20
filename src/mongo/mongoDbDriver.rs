@@ -1,9 +1,9 @@
+use anyhow::Result;
 use mongodb::{
     bson::{doc, Document},
     options::ClientOptions,
     Client, Collection,
 };
-use anyhow::Result;
 
 #[derive(Clone)]
 pub struct MongoService {

@@ -10,6 +10,7 @@ pub struct ProxyServer {
 #[derive(Debug, Deserialize)]
 pub struct ServerDetails {
     pub url: String,
+    pub method: String,
     pub headers: HashMap<String, String>,
     pub query_params: HashMap<String, String>,
     pub authorization: HashMap<String, String>,
