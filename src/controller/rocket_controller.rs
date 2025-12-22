@@ -8,6 +8,7 @@ use rocket::{Data, Request, Route};
 
 use once_cell::sync::Lazy;
 use rocket::response::content::RawText;
+use crate::memory::l2_cache::L2Cache;
 
 static STATIC_SERVER: Lazy<EntitiesConfig> = Lazy::new(|| {
     let yaml_content =
@@ -50,17 +51,28 @@ pub fn dynamic_test<'r>(r: &'r Request<'_>, data: Data<'r>) -> BoxFuture<'r, Out
 
         let outgoing_request = verify_configuration_sender_receiver(r);
 
-        let response = fetch_data_example(outgoing_request).await;
+        let (entity_name, request_details) =
+            (outgoing_request.0.clone(), outgoing_request.1.clone());
+
+        let response = fetch_data_example(request_details.clone()).await;
         println!("{}", response);
+
+        let entity_name_clone = entity_name.clone();
+        let request_details_clone = request_details.clone();
+        let response_clone = response.clone();
+
+        tokio::task::spawn_blocking(move || {
+            tokio::runtime::Handle::current().block_on(
+                L2Cache::store_data(entity_name_clone, request_details_clone, response_clone)
+            );
+        });
 
         Outcome::from(r, RawText(response))
     }
     .boxed()
 }
 
-fn verify_configuration_sender_receiver(
-    r: &Request<'_>,
-) -> crate::model::proxy_server::RequestDetails {
+fn verify_configuration_sender_receiver(r: &Request<'_>) -> (String, RequestDetails) {
     let req_host = r.headers().get_one("Host").unwrap_or_default();
     let req_method = r.method().as_str();
     let req_path = r.uri().path().to_string();
@@ -74,7 +86,7 @@ fn verify_configuration_sender_receiver(
     });
 
     if let Some(entity) = matched {
-        entity.outgoing_request.clone()
+        (entity.name.clone(), entity.outgoing_request.clone())
     } else {
         panic!("Request does not match any incoming_request configuration");
     }

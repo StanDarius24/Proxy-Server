@@ -1,47 +1,45 @@
-use anyhow::Result;
 use mongodb::{
     bson::{doc, Document},
     options::ClientOptions,
     Client, Collection,
 };
+use mongodb::error::Result;
 
 #[derive(Clone)]
 pub struct MongoService {
-    users: Collection<Document>,
+    proxy_entries: Collection<Document>,
 }
 
 impl MongoService {
     pub async fn new() -> Result<Self> {
-        let uri = "mongodb://root:example@localhost:27017/?authSource=admin";
+        let uri = "mongodb://root:password@localhost:27017/?authSource=admin";
 
         let client_options = ClientOptions::parse(uri).await?;
         let client = Client::with_options(client_options)?;
 
-        let db = client.database("test_db");
-        let users = db.collection::<Document>("users");
+        let db = client.database("proxy_server_db");
+        let proxy_entries = db.collection::<Document>("entities");
 
-        Ok(Self { users })
+        Ok(Self { proxy_entries })
     }
 
-    pub async fn insert_user(&self, name: &str, email: &str, age: i32) -> Result<String> {
-        let doc = doc! {
-            "name": name,
-            "email": email,
-            "age": age
-        };
-
-        let result = self.users.insert_one(doc, None).await?;
-        Ok(result.inserted_id.to_string())
+    pub async fn insert_proxy_entry(&self, proxy_entries: Document) -> Result<mongodb::bson::oid::ObjectId> {
+        let result = self.proxy_entries.insert_one(proxy_entries).await?;
+        Ok(result
+            .inserted_id
+            .as_object_id()
+            .expect("Should have inserted ObjectId"))
     }
 
-    pub async fn get_users(&self) -> Result<Vec<Document>> {
-        let mut cursor = self.users.find(None, None).await?;
-        let mut users = Vec::new();
+    pub async fn get_entry_by_id(&self, id: &mongodb::bson::oid::ObjectId) -> Result<Option<Document>> {
+        let filter = doc! { "_id": id };
+        let user = self.proxy_entries.find_one(filter).await?;
+        Ok(user)
+    }
 
-        while let Some(doc) = cursor.try_next().await? {
-            users.push(doc);
-        }
-
-        Ok(users)
+    pub async fn get_entry_by_key(&self, key: &str) -> Result<Option<Document>> {
+        let filter = doc! { "key": key };
+        let proxy_entries = self.proxy_entries.find_one(filter).await?;
+        Ok(proxy_entries)
     }
 }
