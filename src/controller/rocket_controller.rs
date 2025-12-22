@@ -9,7 +9,6 @@ use rocket::{Data, Request, Route};
 use crate::memory::l2_cache::L2Cache;
 use once_cell::sync::Lazy;
 use rocket::response::content::RawText;
-use crate::memory::l2_cache::L2Cache;
 
 static STATIC_SERVER: Lazy<EntitiesConfig> = Lazy::new(|| {
     let yaml_content =
