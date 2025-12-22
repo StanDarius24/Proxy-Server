@@ -1,25 +1,28 @@
-
-receiver:
-  method: GET
-  url: /test
-  headers:
-    Accept: application/json
-    Content-Type: application/json
-  query_params:
-    query1: test
-    query2: test
-  authorization:
-    basic: test
-  body:
-sender:
-  method: GET
-  url: /test2
-  headers:
-    Accept: application/json
-    Content-Type: application/json
-  query_params:
-    query1: test
-    query2: test
-  authorization:
-    basic: test
-  body:
+entities:
+  - name: entity1
+    incoming_request:
+      method: GET
+      server_host: 0.0.0.0:8080
+      endpoint_path: /test/data
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      query_params:
+        query1: test
+        query2: test
+      auth:
+        basic: test
+      payload: ""
+    outgoing_request:
+      server_host: 0.0.0.0:80
+      method: GET
+      endpoint_path: /test2
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      query_params:
+        query1: test
+        query2: test
+      auth:
+        basic: test
+      payload: ""

@@ -22,30 +22,36 @@ cargo build && cargo run
 
 You can customize settings in `config.yml`:
 ```yaml
-receiver:
-  url: /test
-  headers:
-    Accept: application/json
-    Content-Type: application/json
-  query_params:
-    query1: test
-    query2: test
-  authorization:
-    basic: test
-  body:
-sender:
-  url: /test2
-  headers:
-    Accept: application/json
-    Content-Type: application/json
-  query_params:
-    query1: test
-    query2: test
-  authorization:
-    basic: test
-  body:
+entities:
+  - name: entity1
+    incoming_request:
+      method: GET
+      server_host: 0.0.0.0:8080
+      endpoint_path: /test/data
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      query_params:
+        query1: test
+        query2: test
+      auth:
+        basic: test
+      payload: ""
+    outgoing_request:
+      server_host: 0.0.0.0:80
+      method: GET
+      endpoint_path: /test2
+      headers:
+        Accept: application/json
+        Content-Type: application/json
+      query_params:
+        query1: test
+        query2: test
+      auth:
+        basic: test
+      payload: ""
 ```
 
-Requests sent to http://localhost:8080/test will be forwarded to http://localhost:8080/test2. (in this particular example)
+Requests sent to http://localhost:8080/test will be forwarded to http://localhost:80/test2. (in this particular example)
 
 For testing, use the Docker image in the interceptor directory: send a request to the app, which then calls the interceptor and receives the response.
