@@ -6,6 +6,7 @@ use rocket::http::Method;
 use rocket::route::{BoxFuture, Outcome};
 use rocket::{Data, Request, Route};
 
+use crate::memory::l2_cache::L2Cache;
 use once_cell::sync::Lazy;
 use rocket::response::content::RawText;
 use crate::memory::l2_cache::L2Cache;
@@ -69,7 +70,7 @@ pub fn dynamic_test<'r>(r: &'r Request<'_>, data: Data<'r>) -> BoxFuture<'r, Out
 
         Outcome::from(r, RawText(response))
     }
-    .boxed()
+        .boxed()
 }
 
 fn verify_configuration_sender_receiver(r: &Request<'_>) -> (String, RequestDetails) {

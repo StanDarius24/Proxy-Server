@@ -1,9 +1,20 @@
+use mongodb::error::Result;
 use mongodb::{
     bson::{doc, Document},
     options::ClientOptions,
     Client, Collection,
 };
-use mongodb::error::Result;
+use tokio::sync::OnceCell;
+
+static MONGO_SERVICE: OnceCell<MongoService> = OnceCell::const_new();
+
+pub async fn get_mongo_service() -> &'static MongoService {
+    MONGO_SERVICE
+        .get_or_init(|| async {
+            MongoService::new().await.expect("Failed to create service")
+        })
+        .await
+}
 
 #[derive(Clone)]
 pub struct MongoService {
@@ -23,7 +34,10 @@ impl MongoService {
         Ok(Self { proxy_entries })
     }
 
-    pub async fn insert_proxy_entry(&self, proxy_entries: Document) -> Result<mongodb::bson::oid::ObjectId> {
+    pub async fn insert_proxy_entry(
+        &self,
+        proxy_entries: Document,
+    ) -> Result<mongodb::bson::oid::ObjectId> {
         let result = self.proxy_entries.insert_one(proxy_entries).await?;
         Ok(result
             .inserted_id
@@ -31,7 +45,10 @@ impl MongoService {
             .expect("Should have inserted ObjectId"))
     }
 
-    pub async fn get_entry_by_id(&self, id: &mongodb::bson::oid::ObjectId) -> Result<Option<Document>> {
+    pub async fn get_entry_by_id(
+        &self,
+        id: &mongodb::bson::oid::ObjectId,
+    ) -> Result<Option<Document>> {
         let filter = doc! { "_id": id };
         let user = self.proxy_entries.find_one(filter).await?;
         Ok(user)

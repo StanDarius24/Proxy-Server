@@ -3,7 +3,7 @@ mod tests {
     use super::*;
     use mongodb::bson::{doc, Document, oid::ObjectId};
     use tokio;
-    use server_proxy::mongo::mongoDbDriver::MongoService;
+    use server_proxy::mongo::mongo_db_driver::MongoService;
 
     #[tokio::test]
     async fn test_insert_and_get_user() {

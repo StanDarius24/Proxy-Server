@@ -1,23 +1,17 @@
-use mongodb::bson::Document;
 use crate::model::proxy_server::{Entity, RequestDetails};
-use crate::mongo::mongoDbDriver::MongoService;
+use crate::mongo::mongo_db_driver::get_mongo_service;
+use mongodb::bson::Document;
 
-pub struct L2Cache {
-}
+pub struct L2Cache {}
 
 impl L2Cache {
-
     pub async fn store_data(name: String, request_details: RequestDetails, body: String) {
-
-        let service = MongoService::new().await.expect("Failed to create service");
+        let service = get_mongo_service().await;
 
         let incoming = &request_details;
         let composite_key = format!(
             "{}|{}|{}|{}",
-            incoming.method,
-            incoming.server_host,
-            incoming.endpoint_path,
-            body
+            incoming.method, incoming.server_host, incoming.endpoint_path, body
         );
 
         let mut doc = Document::new();
@@ -31,21 +25,17 @@ impl L2Cache {
         incoming_doc.insert("body", body);
 
         doc.insert("incoming_request", incoming_doc);
-        
+
         service.insert_proxy_entry(doc).await.unwrap();
     }
 
     pub async fn fetch_data(entity: Entity, body: String) -> Option<Document> {
-
-        let service = MongoService::new().await.expect("Failed to create service");
+        let service = get_mongo_service().await;
 
         let incoming = &entity.incoming_request;
         let composite_key = format!(
             "{}|{}|{}|{}",
-            incoming.method,
-            incoming.server_host,
-            incoming.endpoint_path,
-            body
+            incoming.method, incoming.server_host, incoming.endpoint_path, body
         );
 
         match service.get_entry_by_key(&composite_key).await {
@@ -53,5 +43,4 @@ impl L2Cache {
             _ => None,
         }
     }
-
 }
