@@ -40,6 +40,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-build-
 
+      - name: Start services with podman-compose
+        run: |
+          pip install podman-compose
+          podman-compose up -d
+
       - name: Build project
         run: cargo build --verbose
 
