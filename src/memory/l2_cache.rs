@@ -1,4 +1,4 @@
-use crate::model::proxy_server::{Entity, RequestDetails};
+use crate::model::proxy_server::RequestDetails;
 use crate::mongo::mongo_db_driver::get_mongo_service;
 use mongodb::bson::Document;
 

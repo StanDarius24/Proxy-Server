@@ -29,10 +29,7 @@ impl Server {
 
     async fn routes() -> Vec<rocket::Route> {
         let mut routes: Vec<rocket::Route> = vec![];
-
-        // routes.extend(rocket_controller::routes());
         routes.extend(rocket_controller::dynamic_routes(Parser::read_configuration()).await);
-
         routes
     }
 }

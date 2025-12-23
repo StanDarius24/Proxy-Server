@@ -1,14 +1,14 @@
+use crate::memory::l1_cache::L1Cache;
+use crate::memory::l2_cache::L2Cache;
 use crate::model::proxy_server::{EntitiesConfig, RequestDetails};
+use once_cell::sync::Lazy;
 use reqwest::ClientBuilder;
 use rocket::async_trait;
 use rocket::futures::FutureExt;
 use rocket::http::Method;
+use rocket::response::content::RawText;
 use rocket::route::{BoxFuture, Outcome};
 use rocket::{Data, Request, Route};
-
-use crate::memory::l2_cache::L2Cache;
-use once_cell::sync::Lazy;
-use rocket::response::content::RawText;
 
 static STATIC_SERVER: Lazy<EntitiesConfig> = Lazy::new(|| {
     let yaml_content =
@@ -40,7 +40,6 @@ pub trait AsyncResponder<'r> {
 
 pub fn dynamic_test<'r>(r: &'r Request<'_>, _data: Data<'r>) -> BoxFuture<'r, Outcome<'r>> {
     async move {
-        // Log request URI and query parameters
         println!("URI: {}", r.uri());
         if let Some(query) = r.uri().query() {
             println!("Query Parameters: {}", query);
@@ -50,10 +49,11 @@ pub fn dynamic_test<'r>(r: &'r Request<'_>, _data: Data<'r>) -> BoxFuture<'r, Ou
             println!("{}: {}", header.name(), header.value());
         }
 
-        let (entity_name, request_details) = {
-            let outgoing_request = verify_configuration_sender_receiver(r);
-            (outgoing_request.0, outgoing_request.1)
-        };
+        let (entity_name, request_details) = verify_configuration_sender_receiver(r);
+
+        if let Some(result) = L1Cache::fetch_data(entity_name.clone(), request_details.clone()).await.ok().flatten() {
+            return Outcome::from(r, RawText(result.to_string()));
+        }
 
         if let Some(doc) = L2Cache::fetch_data(request_details.clone()).await {
             if let Ok(incoming_req) = doc.get_document("incoming_request") {
@@ -65,20 +65,28 @@ pub fn dynamic_test<'r>(r: &'r Request<'_>, _data: Data<'r>) -> BoxFuture<'r, Ou
 
         let response = fetch_data_example(request_details.clone()).await;
         println!("{}", response);
+        let rsp = response.clone();
 
-        let entity_name_clone = entity_name.clone();
-        let request_details_clone = request_details.clone();
-        let response_clone = response.clone();
-
-        tokio::task::spawn_blocking(move || {
-            tokio::runtime::Handle::current().block_on(
-                L2Cache::store_data(entity_name_clone, request_details_clone, response_clone)
-            );
+        tokio::spawn({
+            let entity_name_cloned = entity_name.clone();
+            let request_details_cloned = request_details.clone();
+            let response_cloned = response.clone();
+            async move {
+                let _ = L1Cache::store_data(entity_name_cloned, request_details_cloned, response_cloned)
+                    .await;
+            }
         });
 
-        Outcome::from(r, RawText(response))
+        tokio::spawn(async move {
+            let entity_name_clone = entity_name.clone();
+            let request_details_clone = request_details.clone();
+            let response_clone = response.clone();
+            L2Cache::store_data(entity_name_clone, request_details_clone, response_clone).await;
+        });
+
+        Outcome::from(r, RawText(rsp))
     }
-        .boxed()
+    .boxed()
 }
 
 fn verify_configuration_sender_receiver(r: &Request<'_>) -> (String, RequestDetails) {
@@ -105,8 +113,10 @@ fn verify_configuration_sender_receiver(r: &Request<'_>) -> (String, RequestDeta
         if incoming.endpoint_path.ends_with("/*") {
             let base = incoming.endpoint_path.trim_end_matches("/*");
             if let Some(suffix) = req_path.strip_prefix(base) {
-                // Ensure outgoing path ends with / if needed
-                let outgoing_base = outgoing_request.endpoint_path.trim_end_matches("/*").to_string();
+                let outgoing_base = outgoing_request
+                    .endpoint_path
+                    .trim_end_matches("/*")
+                    .to_string();
                 outgoing_request.endpoint_path = format!("{}{}", outgoing_base, suffix);
             }
         }
