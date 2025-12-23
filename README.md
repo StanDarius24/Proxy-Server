@@ -59,4 +59,19 @@ For testing, use the Docker image in the interceptor directory: send a request t
 ### Wildcard *
 
 if the incoming_request endpoint_path contains a wildcard *, it will match any path after the specified path.
-For example, /test/data/** will match /test/data/123, /test/data/abc/def, etc.
+For example, /test/data/* will match /test/data/123, /test/data/abc/def, etc.
+
+---
+### Progress
+- [x] Basic Proxy Functionality
+- [x] Configuration Management
+- [x] Valkey caching layer (Redis)
+- [x] Secondary caching layer (MongoDB)
+- [ ] Advanced Error Handling
+- [ ] Logging and Monitoring
+- [ ] Security Management
+- [ ] Testing and Validation
+- [ ] Documentation
+- [ ] Deployment Scripts
+- [ ] Performance Optimization
+- [ ] User Interface (Optional)
