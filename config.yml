@@ -3,7 +3,7 @@ entities:
     incoming_request:
       method: GET
       server_host: 0.0.0.0:8080
-      endpoint_path: /test/data
+      endpoint_path: /test/data/*
       headers:
         Accept: application/json
         Content-Type: application/json

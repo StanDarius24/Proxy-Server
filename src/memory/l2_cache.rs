@@ -10,8 +10,8 @@ impl L2Cache {
 
         let incoming = &request_details;
         let composite_key = format!(
-            "{}|{}|{}|{}",
-            incoming.method, incoming.server_host, incoming.endpoint_path, body
+            "{}|{}|{}",
+            incoming.method, incoming.server_host, incoming.endpoint_path
         );
 
         let mut doc = Document::new();
@@ -29,13 +29,13 @@ impl L2Cache {
         service.insert_proxy_entry(doc).await.unwrap();
     }
 
-    pub async fn fetch_data(entity: Entity, body: String) -> Option<Document> {
+    pub async fn fetch_data(request_details: RequestDetails) -> Option<Document> {
         let service = get_mongo_service().await;
 
-        let incoming = &entity.incoming_request;
+        let incoming = &request_details;
         let composite_key = format!(
-            "{}|{}|{}|{}",
-            incoming.method, incoming.server_host, incoming.endpoint_path, body
+            "{}|{}|{}",
+            incoming.method, incoming.server_host, incoming.endpoint_path
         );
 
         match service.get_entry_by_key(&composite_key).await {

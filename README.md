@@ -27,7 +27,7 @@ entities:
     incoming_request:
       method: GET
       server_host: 0.0.0.0:8080
-      endpoint_path: /test/data
+      endpoint_path: /test/data/*
       headers:
         Accept: application/json
         Content-Type: application/json
@@ -55,3 +55,8 @@ entities:
 Requests sent to http://localhost:8080/test will be forwarded to http://localhost:80/test2. (in this particular example)
 
 For testing, use the Docker image in the interceptor directory: send a request to the app, which then calls the interceptor and receives the response.
+
+### Wildcard *
+
+if the incoming_request endpoint_path contains a wildcard *, it will match any path after the specified path.
+For example, /test/data/* will match /test/data/123, /test/data/abc/def, etc.
