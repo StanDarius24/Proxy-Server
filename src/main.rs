@@ -2,9 +2,10 @@
 extern crate rocket;
 mod configuration;
 mod controller;
-mod model;
 mod memory;
+mod model;
 mod mongo;
+mod valkey;
 
 use crate::configuration::server;
 
