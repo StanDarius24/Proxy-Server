@@ -26,7 +26,8 @@ pub async fn dynamic_routes(_server: EntitiesConfig) -> Vec<Route> {
             "DELETE" => Method::Delete,
             _ => Method::Get,
         };
-        let path = format!("{}/<_..>", entity.incoming_request.endpoint_path);
+        let base_path = entity.incoming_request.endpoint_path.trim_end_matches("/*");
+        let path = format!("{}/<_..>", base_path);
         routes.push(Route::new(method, &path, dynamic_test));
     }
     routes
@@ -37,22 +38,30 @@ pub trait AsyncResponder<'r> {
     async fn respond_async(r: &'r Request<'_>, data: Data<'r>) -> Outcome<'r>;
 }
 
-pub fn dynamic_test<'r>(r: &'r Request<'_>, data: Data<'r>) -> BoxFuture<'r, Outcome<'r>> {
+pub fn dynamic_test<'r>(r: &'r Request<'_>, _data: Data<'r>) -> BoxFuture<'r, Outcome<'r>> {
     async move {
+        // Log request URI and query parameters
         println!("URI: {}", r.uri());
         if let Some(query) = r.uri().query() {
             println!("Query Parameters: {}", query);
         }
-        println!();
-        println!("Headers:");
+        println!("\nHeaders:");
         for header in r.headers().iter() {
             println!("{}: {}", header.name(), header.value());
         }
 
-        let outgoing_request = verify_configuration_sender_receiver(r);
+        let (entity_name, request_details) = {
+            let outgoing_request = verify_configuration_sender_receiver(r);
+            (outgoing_request.0, outgoing_request.1)
+        };
 
-        let (entity_name, request_details) =
-            (outgoing_request.0.clone(), outgoing_request.1.clone());
+        if let Some(doc) = L2Cache::fetch_data(request_details.clone()).await {
+            if let Ok(incoming_req) = doc.get_document("incoming_request") {
+                if let Ok(body) = incoming_req.get_str("body") {
+                    return Outcome::from(r, RawText(body.to_string()));
+                }
+            }
+        }
 
         let response = fetch_data_example(request_details.clone()).await;
         println!("{}", response);
@@ -79,14 +88,29 @@ fn verify_configuration_sender_receiver(r: &Request<'_>) -> (String, RequestDeta
 
     let matched = STATIC_SERVER.entities.iter().find(|entity| {
         let incoming = &entity.incoming_request;
-        let url_matches = req_path == incoming.endpoint_path;
+        let endpoint = incoming.endpoint_path.trim_end_matches("/*");
+        let url_matches = if incoming.endpoint_path.ends_with("/*") {
+            req_path.starts_with(endpoint)
+        } else {
+            req_path == incoming.endpoint_path
+        };
         let method_matches = req_method.eq_ignore_ascii_case(&incoming.method);
         let host_matches = req_host == incoming.server_host;
         url_matches && method_matches && host_matches
     });
 
     if let Some(entity) = matched {
-        (entity.name.clone(), entity.outgoing_request.clone())
+        let mut outgoing_request = entity.outgoing_request.clone();
+        let incoming = &entity.incoming_request;
+        if incoming.endpoint_path.ends_with("/*") {
+            let base = incoming.endpoint_path.trim_end_matches("/*");
+            if let Some(suffix) = req_path.strip_prefix(base) {
+                // Ensure outgoing path ends with / if needed
+                let outgoing_base = outgoing_request.endpoint_path.trim_end_matches("/*").to_string();
+                outgoing_request.endpoint_path = format!("{}{}", outgoing_base, suffix);
+            }
+        }
+        (entity.name.clone(), outgoing_request)
     } else {
         panic!("Request does not match any incoming_request configuration");
     }
